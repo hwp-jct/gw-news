@@ -12,23 +12,28 @@ if not ut.check_password():
 
 st.subheader('Upload ')
 sub_folders = ('fromdb', 'result')
-sub_folder = st.selectbox('Select upload folder', sub_folders, index=1)
+if 'sel_upload_folder' not in st.session_state:
+    st.session_state.sel_upload_folder = "fromdb"
+idx = sub_folders.index(st.session_state.sel_upload_folder)
+st.session_state.sel_upload_folder = st.selectbox('Select upload folder', sub_folders, index= idx)
+print(st.session_state.sel_upload_folder)
 
 # print("--- run ---")
 if 'uploaded_files' not in st.session_state:
     st.session_state.uploaded_files = []
+
 uploaded_files = st.file_uploader("Choose a upload files", ['csv','txt'], accept_multiple_files=True)
 if uploaded_files != st.session_state.uploaded_files:
     # print("upload file")
     for f in uploaded_files:
         if f in st.session_state.uploaded_files:
             continue
-        if err := ut.save_uploaded_file(f, sub_folder) is not None:
+        if err := ut.save_uploaded_file(f, st.session_state.sel_upload_folder) is not None:
             st.toast(f"❌ upload fail: {err}")
         else:
             st.toast(f"✔️ upload ok: {f.name}")
     st.session_state.uploaded_files = uploaded_files
-    # st.rerun()
+    st.rerun() # streamlit-file-browser or streamlit bug?
 
 st.subheader('Uploaded File List')
 event = st_file_browser(ut.get_work_path(),
@@ -52,4 +57,5 @@ if event and event['type'] == 'DELETE_FILE':
             st.toast(f"❌ delete fail: {err}")
         else:
             st.toast(f"✔️ delete ok: {filepath}")
-            # st.rerun()
+            # st.rerun() # streamlit-file-browser or streamlit bug?
+
