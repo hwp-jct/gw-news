@@ -38,7 +38,7 @@ if uploaded_files != st.session_state.uploaded_files:
 st.subheader('Uploaded File List')
 event = st_file_browser(ut.get_work_path(),
                         # ignore_file_select_event=True,
-                        file_ignores={"retain_parent": True, "rules": (re.compile(".*.exe"), re.compile(".*.ini"), re.compile(".*.xlsx"))},
+                        file_ignores={"retain_parent": True, "rules": (re.compile(".*.exe"), re.compile(".*.ini"))},
                         key="A",
                         show_choose_file=False,
                         show_choose_folder=False,
