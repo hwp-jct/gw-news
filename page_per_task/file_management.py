@@ -22,7 +22,7 @@ print(st.session_state.sel_upload_folder)
 if 'uploaded_files' not in st.session_state:
     st.session_state.uploaded_files = []
 
-uploaded_files = st.file_uploader("Choose a upload files", ['csv','txt'], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Choose a upload files", ['csv','txt', 'xlsx'], accept_multiple_files=True)
 if uploaded_files != st.session_state.uploaded_files:
     # print("upload file")
     for f in uploaded_files:
