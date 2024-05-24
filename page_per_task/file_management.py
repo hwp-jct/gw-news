@@ -25,20 +25,20 @@ if 'uploaded_files' not in st.session_state:
 uploaded_files = st.file_uploader("Choose a upload files", ['csv','txt', 'xlsx'], accept_multiple_files=True)
 if uploaded_files != st.session_state.uploaded_files:
     # print("upload file")
+    err_list = []
     for f in uploaded_files:
         if f in st.session_state.uploaded_files:
             continue
         try:
             ut.save_uploaded_file(f, st.session_state.sel_upload_folder)
-            st.toast(f"✔️ upload ok: {f.name}")
         except Exception as e:
-            st.toast(f"❌ upload fail: {e}")
-        # if err := ut.save_uploaded_file(f, st.session_state.sel_upload_folder) is not None:
-        #     st.toast(f"❌ upload fail: {err}")
-        # else:
-        #     st.toast(f"✔️ upload ok: {f.name}")
+            err_list.append(f"{f.name}: {e}")
     st.session_state.uploaded_files = uploaded_files
-    # st.rerun() # streamlit-file-browser or streamlit bug?
+    if err_list:
+        st.error(err_list)
+    else:
+        st.info("All files uploaded.")
+    st.rerun() # streamlit-file-browser or streamlit bug?
 
 st.subheader('Uploaded File List')
 event = st_file_browser(ut.get_work_path(),

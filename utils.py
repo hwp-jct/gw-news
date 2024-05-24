@@ -64,7 +64,7 @@ def save_uploaded_file(file, sub_path=None):
     if not os.path.exists(folder):
         os.makedirs(folder)
     file_path = os.path.join(folder, file.name)
-    with open_file_dynamic_encoding(file_path, 'wb') as f:
+    with open(file_path, mode='wb') as f:
         f.write(file.getbuffer())
 
 
@@ -166,7 +166,7 @@ def detect_encoding(file_path):
             return 'utf-8'
 
 
-def open_file_dynamic_encoding(file_path, mode='r', default_encoding='utf-8'):
+def open_utf_text_file(file_path, mode='r'):
     return open(file_path, mode, encoding=detect_encoding(file_path))
 
 

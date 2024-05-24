@@ -16,10 +16,10 @@ os.environ["USE_STREAMLIT"] = "True"
 
 def run_pure_python_test():
     file_path = ut.get_work_path("result/연합간공방순위.csv")
-    with ut.open_file_dynamic_encoding(file_path) as file:
+    with ut.open_utf_text_file(file_path) as file:
         context_1 = file.read()
     file_path = ut.get_work_path("result/연합공방전투로그.csv")
-    with ut.open_file_dynamic_encoding(file_path) as file:
+    with ut.open_utf_text_file(file_path) as file:
         context_2 = file.read()
     prompt = PromptTemplate.from_template("""
 당신은 전쟁 게임 건십배틀의 종군기자 Davis입니다. 다음 주어진 context를 바탕으로 뉴스 기사를 사실적으로 작성해야 합니다.

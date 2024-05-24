@@ -52,7 +52,7 @@ for key, value in dict_contexts.items():
 for key, value in dict_contexts.items():
     if key != "language" and value is not None:
         file_path = os.path.join(work_dir, value)
-        with ut.open_file_dynamic_encoding(file_path) as file:
+        with ut.open_utf_text_file(file_path) as file:
             dict_contexts[key] = file.read()
 
 ready_to_generate = all(value is not None for value in dict_contexts.values())
