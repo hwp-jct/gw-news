@@ -7,8 +7,6 @@ import keyboard  # 키보드 입력 감지 라이브러리
 
 from contextlib import contextmanager
 
-import utils
-
 QUIT_THREAD = False
 PROJ_FOLDER = None
 WORK_FOLDER = None
@@ -66,7 +64,7 @@ def save_uploaded_file(file, sub_path=None):
     if not os.path.exists(folder):
         os.makedirs(folder)
     file_path = os.path.join(folder, file.name)
-    with utils.open_file_dynamic_encoding(file_path, 'wb') as f:
+    with open_file_dynamic_encoding(file_path, 'wb') as f:
         f.write(file.getbuffer())
 
 
