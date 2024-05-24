@@ -51,6 +51,8 @@ def get_work_path(file_or_folder=None):
     global WORK_FOLDER
     if WORK_FOLDER is None:
         WORK_FOLDER = os.path.join(get_project_path(), 'dist')
+        if not os.path.exists(WORK_FOLDER):
+            os.makedirs(WORK_FOLDER)
     if file_or_folder is None:
         return WORK_FOLDER
     return os.path.join(WORK_FOLDER, file_or_folder)
@@ -64,12 +66,8 @@ def save_uploaded_file(file, sub_path=None):
     if not os.path.exists(folder):
         os.makedirs(folder)
     file_path = os.path.join(folder, file.name)
-    try:
-        with utils.open_file_dynamic_encoding(file_path, 'wb') as f:
-            f.write(file.getbuffer())
-            return None
-    except Exception as e:
-        return file_path  # error
+    with utils.open_file_dynamic_encoding(file_path, 'wb') as f:
+        f.write(file.getbuffer())
 
 
 def delete_uploaded_file(filename, sub_path=None):
