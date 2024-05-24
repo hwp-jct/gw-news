@@ -38,7 +38,7 @@ WHERE [LogDate] BETWEEN '{b_time}' AND '{e_time}'
         csv_file_name = f"fromdb/bl-{beg_time.strftime('%Y%m%dT%H%M%S')}.csv"
         print(f"working folder: {ut.get_project_path()}")
         # print(ut.get_work_file(csv_file_name))
-        df.to_csv(ut.get_work_path(csv_file_name), index=False, header=False, encoding='utf-8')
+        ut.df_write_csv(df, ut.get_work_path(csv_file_name), encoding='utf-8')
         print(f"{csv_file_name} is saved.")
 
 

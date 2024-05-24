@@ -16,21 +16,23 @@ WN_PROMPT_TEMPLATE = """
 """
 
 
-def get_llm():
-    if os.getenv("USE_AZURE", "False") == "True":
+def get_llm(model_name, section):
+    # if os.getenv("USE_AZURE", "False") == "True":
+    if section == "AZURE":
         from langchain_openai import AzureChatOpenAI
-        os.environ["AZURE_OPENAI_API_KEY"] = ut.st_secrets("AZURE_OPENAI_API_KEY")
+        os.environ["AZURE_OPENAI_API_KEY"] = ut.st_secrets("API_KEY", section)
         llm = AzureChatOpenAI(
-            azure_endpoint=ut.st_secrets("AZURE_ENDPOINT"),
-            openai_api_version="2024-02-15-preview",
-            azure_deployment="ds-gpt4"
+            azure_endpoint=ut.st_secrets("ENDPOINT", section, model_name),
+            openai_api_version=ut.st_secrets("API_VERSION", section, model_name),
+            azure_deployment=ut.st_secrets("DEPLOYMENT", section, model_name)
         )
     else:
         from langchain_openai import ChatOpenAI
         llm = ChatOpenAI(
             temperature=0,
-            openai_api_key=ut.st_secrets("OPENAI_API_KEY"),
-            model_name="gpt-4-turbo-preview",
+            openai_api_key=ut.st_secrets("API_KEY", section),
+            model_name=ut.st_secrets("NAME", section, model_name),
         )
     return llm
+
 

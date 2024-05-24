@@ -1,16 +1,41 @@
 import os
 import time
 import hmac
+import pandas as pd
 import streamlit as st
 import keyboard  # 키보드 입력 감지 라이브러리
 
 from contextlib import contextmanager
+
+import utils
 
 QUIT_THREAD = False
 PROJ_FOLDER = None
 WORK_FOLDER = None
 DONT_DISTRUB = False
 
+
+def is_quoted(s, quote='"'):
+    return s.startswith(quote) and s.endswith(quote)
+
+
+def strip_quotes(s, quote='"'):
+    if is_quoted(s, quote):
+        return s[1:-1]
+    return s
+
+
+def fix4_xl_str(s):
+    if is_quoted(s):
+        return s
+    if s.startswith('=') or s.startswith('-'):
+        return f'"{s}"'
+    if ',' in s or ' ' in s:
+        return f'"{s}"'
+    return s
+
+# ------------------------------------------------
+# PATH Utilitiy Functions
 
 def get_project_path():
     global PROJ_FOLDER
@@ -31,6 +56,35 @@ def get_work_path(file_or_folder=None):
     return os.path.join(WORK_FOLDER, file_or_folder)
 
 
+# ------------------------------------------------
+# Upload File Utility Functions
+
+def save_uploaded_file(file, sub_path=None):
+    folder = get_work_path(sub_path)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    file_path = os.path.join(folder, file.name)
+    try:
+        with utils.open_file_dynamic_encoding(file_path, 'wb') as f:
+            f.write(file.getbuffer())
+            return None
+    except Exception as e:
+        return file_path  # error
+
+
+def delete_uploaded_file(filename, sub_path=None):
+    folder = get_work_path(sub_path)
+    file_path = os.path.join(folder, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return None
+    else:
+        return file_path  # error
+
+
+# ------------------------------------------------
+# Keyboard Utility Functions
+
 # 키보드 입력 감지를 위한 함수
 def check_keyboard_input():
     global QUIT_THREAD
@@ -48,6 +102,9 @@ def dont_disturb():
     yield
     DONT_DISTRUB = False
 
+
+# ------------------------------------------------
+# Streamlit Utility Functions
 
 # https://docs.streamlit.io/knowledge-base/deploy/authentication-without-sso
 def check_password():
@@ -74,8 +131,15 @@ def check_password():
     return False
 
 
-def st_secrets(name):
-    return st.secrets[name]
+def st_secrets(key, section=None, model_name=None):
+    if section and model_name:
+        for model in st.secrets[section]['MODELS']:
+            if model['NAME'] == model_name:
+                return model[key]
+    elif section:
+        return st.secrets[section][key]
+    else:
+        return st.secrets[key]
 
 
 def print_log(msg):
@@ -88,24 +152,32 @@ def print_log(msg):
 print_log.stwrite = None
 
 
-def save_uploaded_file(file, sub_path=None):
-    folder = get_work_path(sub_path)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    file_path = os.path.join(folder, file.name)
-    try:
-        with open(file_path, 'wb') as f:
-           f.write(file.getbuffer())
-           return None
-    except Exception as e:
-        return file_path # error
+# ------------------------------------------------
+# File Utility Functions
 
 
-def delete_uploaded_file(filename, sub_path=None):
-    folder = get_work_path(sub_path)
-    file_path = os.path.join(folder, filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        return None
-    else:
-        return file_path # error
+def detect_encoding(file_path):
+    import codecs
+    with open(file_path, 'rb') as file:
+        raw_data = file.read(4)  # BOM의 길이는 최대 4바이트이므로 처음 4바이트만 읽음
+        if raw_data.startswith(codecs.BOM_UTF8):
+            return 'utf-8-sig'
+        elif raw_data[:2] in [codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE]:
+            return 'utf-16'
+        elif raw_data in [codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE]:
+            return 'utf-32'
+        else:
+            return 'utf-8'
+
+
+def open_file_dynamic_encoding(file_path, mode='r', default_encoding='utf-8'):
+    return open(file_path, mode, encoding=detect_encoding(file_path))
+
+
+def pd_read_csv(file_path, *, header='infer'):
+    return pd.read_csv(file_path, header=header, encoding=detect_encoding(file_path))
+
+
+def df_write_csv(df, file_path, *, header=True, index=False, encoding='utf-8'):
+    # print(f">>> Write to {file_path}")
+    df.to_csv(file_path, header=header, index=index, encoding=encoding)

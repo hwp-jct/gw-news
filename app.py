@@ -9,17 +9,17 @@ from langchain_core.output_parsers import StrOutputParser
 
 
 # 런타임 전역 실행 환경 변수 설정
-os.environ["USE_AZURE"] = "False"
+# os.environ["USE_AZURE"] = "False"
 os.environ["USE_STREAMLIT"] = "True"
 
 # ----------------------------------------------
 
 def run_pure_python_test():
     file_path = ut.get_work_path("result/연합간공방순위.csv")
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with ut.open_file_dynamic_encoding(file_path) as file:
         context_1 = file.read()
     file_path = ut.get_work_path("result/연합공방전투로그.csv")
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with ut.open_file_dynamic_encoding(file_path) as file:
         context_2 = file.read()
     prompt = PromptTemplate.from_template("""
 당신은 전쟁 게임 건십배틀의 종군기자 Davis입니다. 다음 주어진 context를 바탕으로 뉴스 기사를 사실적으로 작성해야 합니다.
@@ -32,7 +32,7 @@ def run_pure_python_test():
 <연합간 제독의 전투 로그>
 {context_2}
 """)
-    model = llm.get_llm()
+    model = llm.get_llm("gpt-4o", "OPENAI")
     output_parser = StrOutputParser()
     chain = prompt | model | output_parser
     # print(chain)
