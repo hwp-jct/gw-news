@@ -33,7 +33,7 @@ if uploaded_files != st.session_state.uploaded_files:
         else:
             st.toast(f"✔️ upload ok: {f.name}")
     st.session_state.uploaded_files = uploaded_files
-    st.rerun() # streamlit-file-browser or streamlit bug?
+    # st.rerun() # streamlit-file-browser or streamlit bug?
 
 st.subheader('Uploaded File List')
 event = st_file_browser(ut.get_work_path(),

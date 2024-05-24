@@ -27,3 +27,5 @@ with st.spinner("Loading data..."):
         df = ut.pd_read_csv(ut.get_work_path("fromdb/bl-20240404-0000.csv"))
         df.columns = bla.get_battle_log_headers(True)
         st.write(df.head())
+    else:
+        st.write("No sample data")
