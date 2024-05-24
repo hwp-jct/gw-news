@@ -28,10 +28,15 @@ if uploaded_files != st.session_state.uploaded_files:
     for f in uploaded_files:
         if f in st.session_state.uploaded_files:
             continue
-        if err := ut.save_uploaded_file(f, st.session_state.sel_upload_folder) is not None:
-            st.toast(f"❌ upload fail: {err}")
-        else:
+        try:
+            ut.save_uploaded_file(f, st.session_state.sel_upload_folder)
             st.toast(f"✔️ upload ok: {f.name}")
+        except Exception as e:
+            st.toast(f"❌ upload fail: {e}")
+        # if err := ut.save_uploaded_file(f, st.session_state.sel_upload_folder) is not None:
+        #     st.toast(f"❌ upload fail: {err}")
+        # else:
+        #     st.toast(f"✔️ upload ok: {f.name}")
     st.session_state.uploaded_files = uploaded_files
     # st.rerun() # streamlit-file-browser or streamlit bug?
 
