@@ -314,7 +314,7 @@ if __name__ == '__main__':
     merged_file = ut.get_work_path("fromdb/merged.csv")
     ut.df_write_csv(merged_file, header=False, encoding='utf-8-sig')
     # merged_df = ut.pd_read_csv(merged_file, header=None)
-    print(merged_file)
+    print(f"SAVED {merged_file}")
 
     # merged_df의 컬럼수가 37개인지 45개인지 확인
     is_full_log = len(merged_df.columns) == 45

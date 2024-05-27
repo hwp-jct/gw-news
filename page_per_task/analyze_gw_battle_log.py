@@ -31,7 +31,7 @@ with st.status("Analyzing battle logs...", expanded=True) as status:
     # merged_df = bla.merge_battle_logs() # 함수 그대로 복사해서 실행
     data_folder = ut.get_work_path('fromdb')
     csv_files = [f for f in os.listdir(data_folder) if f.startswith('bl-') and f.endswith('.csv')]
-    if(len(csv_files) == 0):
+    if len(csv_files) == 0:
         st.error("No battle log files found.")
         st.stop()
     df_list = []
