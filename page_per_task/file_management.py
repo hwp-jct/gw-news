@@ -53,7 +53,8 @@ if uploaded_files:
             st.error(f"Error uploading {f.name}: {e}")
 
     if new_upload_files and not err_list:
-        st.info(f"{len(uploaded_files)} files uploaded.") # force refresh st.file_browser
+        st.info(f"total {len(uploaded_files)} files in temporal memory.") # force refresh st.file_browser
+        # st.rerun()
 
 st.divider()
 st.subheader('Uploaded File List')

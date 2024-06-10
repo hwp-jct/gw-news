@@ -222,7 +222,7 @@ def _analyze_30004_alliance_battle(group, writer):
             ((adf['p3: 공격자연합ID'] == row['p5: 방어자연합ID']) & (adf['p5: 방어자연합ID'] == row['p3: 공격자연합ID']))
         ]
         top_ad_logs = pd.concat([top_ad_logs, temp_df])
-    drop_list = ['Reason', 'WorldID', 'UserID', 'p0: BattleID', 'p25: 워크ID']
+    drop_list = ['Reason', 'UserID', 'p0: BattleID', 'p25: 워크ID']
     top_ad_logs.drop(columns=drop_list, inplace=True)
 
     brief_name = "연합간 전투 로그"
@@ -257,8 +257,12 @@ def analyze_battle_logs_by_reason(merged_df, is_full_log):
                 chage_id_to_name(dic_guild, dic_users, reason, group)
                 group.to_excel(writer, sheet_name=f'{reason}', index=False)
                 analyze_30004(writer, group)
-                
-                break
+            elif reason == 30005:
+                group = change_header_readable(is_full_log, tab_descr, reason, group)
+                chage_id_to_name(dic_guild, dic_users, reason, group)
+                group.to_excel(writer, sheet_name=f'{reason}', index=False)
+                enc_type = os.getenv("ENC_TYPE", 'utf-8')
+                ut.df_write_csv(group, ut.get_work_path(f'result/{reason}.csv'), encoding=enc_type)
 
 
 def analyze_30004(writer, group):

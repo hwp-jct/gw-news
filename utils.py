@@ -59,6 +59,12 @@ def get_work_path(file_or_folder=None):
 # ------------------------------------------------
 # Upload File Utility Functions
 
+def save_txt_file(file_name, contents, sub_path=None):
+    file_path = os.path.join(get_work_path(sub_path), file_name)
+    with open(file_path, mode='w', encoding='utf-8') as f:
+        f.write(contents)
+
+
 def save_uploaded_file(file, sub_path=None):
     folder = get_work_path(sub_path)
     if not os.path.exists(folder):

@@ -51,6 +51,7 @@ def run_streamlit():
     show_pages(
         [Page("app.py", "Home", "🏠"),
          Page("page_per_task/file_management.py", "File Management", "📂"),
+         # Page("page_per_task/test_st.py", "Test Streamlit"),
          Page("page_per_task/collect_gw_battle_log.py", "1. Collect Log"),
          Page("page_per_task/analyze_gw_battle_log.py", "2. Analysis Log"),
          Page("page_per_task/generate_news.py", "3. Generate News")],
