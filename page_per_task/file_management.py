@@ -25,7 +25,7 @@ print(f'dbg_run_fm---> {st.session_state.fm_run_cnt}')
 st.subheader('Select Upload Folder')
 sub_folders = ('prompts', 'collect', 'testlog')
 if 'sel_upload_folder' not in st.session_state:
-    st.session_state.sel_upload_folder = "$root"
+    st.session_state.sel_upload_folder = "prompts"
 idx = sub_folders.index(st.session_state.sel_upload_folder)
 
 print(f"> selected upload folder! {st.session_state.sel_upload_folder}")
@@ -74,12 +74,13 @@ event = st_file_browser(
         ut.get_work_path(),
         key="file_browser",
         # key=f"file_browser_{st.session_state.fm_run_cnt}",
+        show_preview=False,
         show_choose_file=True,
         show_choose_folder=False,
         show_delete_file=True,
-        show_upload_file=False,
+        show_upload_file=True,
         show_download_file=False,
-        show_new_folder=False,
+        show_new_folder=True,
         use_cache=False,
     )
 print(f"< st_file_browser!!")
