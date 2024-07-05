@@ -3,14 +3,9 @@ import utils as ut
 import llms as llm
 import streamlit as st
 
-from st_pages import Page, Section, show_pages, add_page_title
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-
-# 런타임 전역 실행 환경 변수 설정
-# os.environ["USE_AZURE"] = "False"
-os.environ["USE_STREAMLIT"] = "True"
 
 # ----------------------------------------------
 
@@ -42,40 +37,63 @@ def run_pure_python_test():
 
 # ----------------------------------------------
 
-def run_streamlit():
+def st_home_info():
     st.subheader("월드 뉴스 생성 작업 순서")
     st.write("1. Collect Log : DB에서 로그 수집")
     st.write("2. Analysis Log : 로그 분석")
     st.write("3. Generate News : 뉴스 생성")
 
-    show_pages(
-        [Page("app.py", "Home", "🏠"),
-         Page("page_per_task/file_management.py", "File Management", "📂"),
-         # Page("page_per_task/test_st.py", "Test Streamlit"),
-         Page("page_per_task/collect_gw_battle_log.py", "1. Collect Log"),
-         Page("page_per_task/analyze_gw_battle_log.py", "2. Analysis Log"),
-         Page("page_per_task/generate_news.py", "3. Generate News")],
-    )
+def run_streamlit():
+    # show_pages([
+    #     Page("app.py", "Home", "🏠"),
+    #     Page("page_per_task/file_management.py", "File Management", "📂"),
+    #     Section(name="Test WWN Generation", icon="🎯"),
+    #     Page("page_per_task/collect_gw_battle_log.py", "Collect Log", ":one:"),
+    #     Page("page_per_task/analyze_gw_battle_log.py", "Analysis Log", ":two:"),
+    #     Page("page_per_task/generate_news.py", "Generate News", ":three:"),
+    #     # Page("page_per_task/test_st.py", "Test Streamlit"),
+    #     ]),
+    st.session_state.pages = {
+        "Home" : [
+            st.Page("app.py", title="Home", icon=":material/home:"),
+            # st.Page(ut.check_password, title="BatchRun", icon=":material/passkey:"),
+        ],
+        "Test" : [
+            st.Page("page_per_task/file_management.py", title="Upload", icon=":material/cloud_upload:"),
+            st.Page("page_per_task/collect_gw_battle_log.py", title="Collect Log", icon=":material/counter_1:"),
+            st.Page("page_per_task/analyze_gw_battle_log.py", title="Analysis Log", icon=":material/counter_2:"),
+            st.Page("page_per_task/generate_news.py", title="Generate News", icon=":material/counter_3:"),
+            # st.Page("page_per_task/test_st.py", "Test Streamlit"),
+        ],
+    }
+    pg = st.navigation(st.session_state.pages)
+    pg.run()
+    st_home_info()
+    
 
+os.environ["USE_STREAMLIT"] = "True"
 
 # ----------------------------------------------
 if __name__ == '__main__':
-    if not ut.check_password():
+    if not ut.st_check_password():
         st.stop()
 
     # upload folder check. if not exist, create it.
     up_folder = ut.get_work_path()
     if not os.path.exists(up_folder):
         os.makedirs(up_folder)
-    up_folder = ut.get_work_path("fromdb")
-    if not os.path.exists(up_folder):
-        os.makedirs(up_folder)
-    up_folder = ut.get_work_path("result")
-    if not os.path.exists(up_folder):
-        os.makedirs(up_folder)
+        up_folder = ut.get_work_path("prompts")
+        if not os.path.exists(up_folder):
+            os.makedirs(up_folder)
+        up_folder = ut.get_work_path("collect")
+        if not os.path.exists(up_folder):
+            os.makedirs(up_folder)
+        up_folder = ut.get_work_path("testlog")
+        if not os.path.exists(up_folder):
+            os.makedirs(up_folder)
 
     if os.getenv("USE_STREAMLIT") == "True":
-        ut.print_log.stwrite = st.warning
+        ut.print_log.st_writer = st.warning
         run_streamlit()
     else:
         run_pure_python_test()

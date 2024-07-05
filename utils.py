@@ -1,6 +1,8 @@
 import os
 import time
 import hmac
+import gzip
+import shutil
 import pandas as pd
 import streamlit as st
 import keyboard  # 키보드 입력 감지 라이브러리
@@ -10,7 +12,7 @@ from contextlib import contextmanager
 QUIT_THREAD = False
 PROJ_FOLDER = None
 WORK_FOLDER = None
-DONT_DISTRUB = False
+DONT_DISTURB = False
 
 
 def is_quoted(s, quote='"'):
@@ -32,6 +34,7 @@ def fix4_xl_str(s):
         return f'"{s}"'
     return s
 
+
 # ------------------------------------------------
 # PATH Utilitiy Functions
 
@@ -48,7 +51,7 @@ def get_project_path():
 def get_work_path(file_or_folder=None):
     global WORK_FOLDER
     if WORK_FOLDER is None:
-        WORK_FOLDER = os.path.join(get_project_path(), 'dist')
+        WORK_FOLDER = os.path.join(get_project_path(), 'data')
         if not os.path.exists(WORK_FOLDER):
             os.makedirs(WORK_FOLDER)
     if file_or_folder is None:
@@ -58,6 +61,54 @@ def get_work_path(file_or_folder=None):
 
 # ------------------------------------------------
 # Upload File Utility Functions
+def f_exists(file_name, sub_path):
+    file_path = os.path.join(get_project_path(), 'data', sub_path, file_name)
+    return os.path.exists(file_path)
+
+
+def f_open(file_name: str, sub_path: str, mode: str):
+    dir_path = os.path.join(get_project_path(), 'data', sub_path)
+    os.makedirs(dir_path, exist_ok=True)
+    file_path = os.path.join(dir_path, file_name)
+    return open(file_path, mode)
+
+
+@contextmanager
+def fs_open(file_name, sub_path, mode):
+    file = None
+    try:
+        file = f_open(file_name, sub_path, mode)
+        yield file
+    finally:
+        if file is not None:
+            file.close()
+
+
+@contextmanager
+def z_open(file_name: str, sub_path: str, mode: str):
+    dir_path = os.path.join(get_project_path(), 'data', sub_path)
+    os.makedirs(dir_path, exist_ok=True)
+    file_path = os.path.join(dir_path, file_name)
+    o_file = gzip.open(file_path, mode)
+    try:
+        yield o_file
+    finally:
+        o_file.close()
+
+
+def clear_data_folder(work_folder):
+    work_folder = os.path.join(get_project_path(), 'data', work_folder)
+    if os.path.exists(work_folder):
+        try:
+            shutil.rmtree(work_folder)
+            print(f"Successfully deleted '{work_folder}'")
+        except PermissionError:
+            print(f"Permission denied: '{work_folder}'")
+        except OSError as e:
+            print(f"Error: {e.strerror}")
+    else:
+        print(f"The path '{work_folder}' does not exist")
+
 
 def save_txt_file(file_name, contents, sub_path=None):
     file_path = os.path.join(get_work_path(sub_path), file_name)
@@ -94,22 +145,22 @@ def check_keyboard_input():
         if keyboard.is_pressed('q'):
             QUIT_THREAD = True
             break
-        time.sleep(0.1)  # 키보드 입력을 매 0.1초마다 확인
+        time.sleep(0.01)  # 키보드 입력을 매 0.01초마다 확인
 
 
 @contextmanager
 def dont_disturb():
-    global DONT_DISTRUB
-    DONT_DISTRUB = True
+    global DONT_DISTURB
+    DONT_DISTURB = True
     yield
-    DONT_DISTRUB = False
+    DONT_DISTURB = False
 
 
 # ------------------------------------------------
 # Streamlit Utility Functions
 
 # https://docs.streamlit.io/knowledge-base/deploy/authentication-without-sso
-def check_password():
+def st_check_password():
     """Returns `True` if the user had the correct password."""
 
     def password_entered():
@@ -119,6 +170,8 @@ def check_password():
             del st.session_state["password"]  # Don't store the password.
         else:
             st.session_state["password_correct"] = False
+
+    print(">>> check_password")
 
     # Return True if the password is validated.
     if st.session_state.get("password_correct", False):
@@ -145,20 +198,20 @@ def st_secrets(key, section=None, model_name=None):
 
 
 def print_log(msg):
-    if(os.getenv("USE_STREAMLIT", "False") == "True"):
-        if print_log.stwrite:
-            print_log.stwrite(msg)
+    if os.getenv("USE_STREAMLIT", "False") == "True":
+        if print_log.st_writer:
+            print_log.st_writer(msg)
     else:
         print(msg)
 
-print_log.stwrite = None
+
+print_log.st_writer = None
 
 
 # ------------------------------------------------
 # File Utility Functions
 
-
-def detect_encoding(file_path):
+def detect_encoding(file_path: str) -> str:
     import codecs
     with open(file_path, 'rb') as file:
         raw_data = file.read(4)  # BOM의 길이는 최대 4바이트이므로 처음 4바이트만 읽음
@@ -176,7 +229,7 @@ def open_utf_text_file(file_path, mode='r'):
     return open(file_path, mode, encoding=detect_encoding(file_path))
 
 
-def pd_read_csv(file_path, *, header='infer'):
+def pd_read_csv(file_path: str, *, header='infer'):
     return pd.read_csv(file_path, header=header, encoding=detect_encoding(file_path))
 
 

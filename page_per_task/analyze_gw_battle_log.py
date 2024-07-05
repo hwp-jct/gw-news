@@ -7,10 +7,11 @@ from stqdm import stqdm
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import utils as ut
-import main_bl_analyzer as bla
+import game_log_analyzer as gla
 
 
-if not ut.check_password():
+if not ut.st_check_password():
+    print(">>> check_password failed.")
     st.stop()
 
 # cwd = os.path.dirname(os.path.abspath(__file__))
@@ -50,7 +51,7 @@ with st.status("Analyzing battle logs...", expanded=True) as status:
 
     st.write("Change header to readable names. 2/4")
     time.sleep(1)
-    bla.merge_name_for_battle_log_header(merged_df, is_full_log)
+    gla.merge_name_for_battle_log_header(merged_df, is_full_log)
 
     merged_file = ut.get_work_path("fromdb/merged.csv")
     st.write(f"Write to fromdb/merged.csv... 3/4")
@@ -62,7 +63,7 @@ with st.status("Analyzing battle logs...", expanded=True) as status:
 
     st.write("Analyze battle logs by reason 30004... 4/4")
     time.sleep(1)
-    bla.analyze_battle_logs_by_reason(merged_df, is_full_log)
+    gla.analyze_battle_logs_by_reason(merged_df, is_full_log)
     status.update(label="Analysis completed.", state="complete", expanded=False)
 
 st.success("Analysis completed!")
