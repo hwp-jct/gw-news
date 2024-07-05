@@ -23,7 +23,7 @@ if not ut.st_check_password():
 print(f'dbg_run_fm---> {st.session_state.fm_run_cnt}')
 
 st.subheader('Select Upload Folder')
-sub_folders = ('$root', 'prompts', 'collect')
+sub_folders = ('prompts', 'collect', 'testlog')
 if 'sel_upload_folder' not in st.session_state:
     st.session_state.sel_upload_folder = "$root"
 idx = sub_folders.index(st.session_state.sel_upload_folder)
