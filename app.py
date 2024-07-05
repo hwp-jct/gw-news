@@ -43,6 +43,7 @@ def st_home_info():
     st.write("2. Analysis Log : 로그 분석")
     st.write("3. Generate News : 뉴스 생성")
 
+
 def run_streamlit():
     # show_pages([
     #     Page("app.py", "Home", "🏠"),
@@ -53,23 +54,8 @@ def run_streamlit():
     #     Page("page_per_task/generate_news.py", "Generate News", ":three:"),
     #     # Page("page_per_task/test_st.py", "Test Streamlit"),
     #     ]),
-    st.session_state.pages = {
-        "Home" : [
-            st.Page("app.py", title="Home", icon=":material/home:"),
-            # st.Page(ut.check_password, title="BatchRun", icon=":material/passkey:"),
-        ],
-        "Test" : [
-            st.Page("page_per_task/file_management.py", title="Upload", icon=":material/cloud_upload:"),
-            st.Page("page_per_task/collect_gw_battle_log.py", title="Collect Log", icon=":material/counter_1:"),
-            st.Page("page_per_task/analyze_gw_battle_log.py", title="Analysis Log", icon=":material/counter_2:"),
-            st.Page("page_per_task/generate_news.py", title="Generate News", icon=":material/counter_3:"),
-            # st.Page("page_per_task/test_st.py", "Test Streamlit"),
-        ],
-    }
-    pg = st.navigation(st.session_state.pages)
-    pg.run()
-    st_home_info()
-    
+    pass
+
 
 os.environ["USE_STREAMLIT"] = "True"
 
@@ -82,18 +68,32 @@ if __name__ == '__main__':
     up_folder = ut.get_work_path()
     if not os.path.exists(up_folder):
         os.makedirs(up_folder)
-        up_folder = ut.get_work_path("prompts")
-        if not os.path.exists(up_folder):
-            os.makedirs(up_folder)
-        up_folder = ut.get_work_path("collect")
-        if not os.path.exists(up_folder):
-            os.makedirs(up_folder)
-        up_folder = ut.get_work_path("testlog")
-        if not os.path.exists(up_folder):
-            os.makedirs(up_folder)
+    up_folder = ut.get_work_path("prompts")
+    if not os.path.exists(up_folder):
+        os.makedirs(up_folder)
+    up_folder = ut.get_work_path("collect")
+    if not os.path.exists(up_folder):
+        os.makedirs(up_folder)
+    up_folder = ut.get_work_path("testlog")
+    if not os.path.exists(up_folder):
+        os.makedirs(up_folder)
 
     if os.getenv("USE_STREAMLIT") == "True":
         ut.print_log.st_writer = st.warning
-        run_streamlit()
+        st.session_state.pages = {
+            "Home": [
+                st.Page(st_home_info, title="Home", icon=":material/home:"),
+                # st.Page(ut.check_password, title="BatchRun", icon=":material/passkey:"),
+            ],
+            "Test": [
+                st.Page("page_per_task/file_management.py", title="Upload", icon=":material/cloud_upload:"),
+                st.Page("page_per_task/collect_gw_battle_log.py", title="Collect Log", icon=":material/counter_1:"),
+                st.Page("page_per_task/analyze_gw_battle_log.py", title="Analysis Log", icon=":material/counter_2:"),
+                st.Page("page_per_task/generate_news.py", title="Generate News", icon=":material/counter_3:"),
+                # st.Page("page_per_task/test_st.py", "Test Streamlit"),
+            ],
+        }
+        pg = st.navigation(st.session_state.pages)
+        pg.run()
     else:
         run_pure_python_test()

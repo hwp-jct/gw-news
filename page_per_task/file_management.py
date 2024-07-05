@@ -75,12 +75,11 @@ event = st_file_browser(
         key="file_browser",
         # key=f"file_browser_{st.session_state.fm_run_cnt}",
         show_preview=False,
-        show_choose_file=True,
-        show_choose_folder=False,
+        show_choose_file=False,
         show_delete_file=True,
         show_upload_file=True,
         show_download_file=False,
-        show_new_folder=True,
+        show_new_folder=False,
         use_cache=False,
     )
 print(f"< st_file_browser!!")
