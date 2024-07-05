@@ -171,8 +171,6 @@ def st_check_password():
         else:
             st.session_state["password_correct"] = False
 
-    print(">>> check_password")
-
     # Return True if the password is validated.
     if st.session_state.get("password_correct", False):
         return True

@@ -133,7 +133,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.svn/
 
 # Spyder project settings
 .spyderproject
@@ -171,3 +170,4 @@ cython_debug/
 
 # DATA FIELS
 dist/
+data/

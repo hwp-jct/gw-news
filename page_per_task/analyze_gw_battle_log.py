@@ -9,9 +9,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import utils as ut
 import game_log_analyzer as gla
 
+st_ss = st.session_state
 
 if not ut.st_check_password():
-    print(">>> check_password failed.")
     st.stop()
 
 # cwd = os.path.dirname(os.path.abspath(__file__))
