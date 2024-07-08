@@ -33,7 +33,7 @@ if "dbg_run_cnt" not in st_ss:
 st_ss.dbg_run_cnt += 1
 print(f"dbg_run_cnt----->: {st_ss.dbg_run_cnt}")
 
-prompt_cntxts = {}
+p_contexts = {}
 
 
 # SIDEBAR LLM -----------------------------------------------------------------
@@ -160,37 +160,37 @@ if st_ss.prompt_template:
     # contexts 마다 프로젝트의 data/testlog 폴더에 있는 파일을 선택할 수 있는 컴포넌트를 생성
     w_dir = ut.get_work_path("testlog")
     file_list = [f for f in os.listdir(w_dir) if os.path.isfile(os.path.join(w_dir, f))]
-    prompt_cntxts = {key: None for key in contexts}
+    p_contexts = {key: None for key in contexts}
 
-    for key, value in prompt_cntxts.items():
+    for key, value in p_contexts.items():
         if '@' in key:
             idx = None
             key_file = key.replace('@', '.')
             if key_file in file_list:
-                prompt_cntxts[key] = key
+                p_contexts[key] = key
                 idx = file_list.index(key_file)
-            prompt_cntxts[key] = st.selectbox(f":pencil2: {key}", file_list, index=idx, placeholder="파일 이름을 선택하세요.")
+            p_contexts[key] = st.selectbox(f":pencil2: {key}", file_list, index=idx, placeholder="파일 이름을 선택하세요.")
         elif key == "language":
-            prompt_cntxts[key] = st.selectbox(f":pencil2: {key}", ("ko", "en", "jp"), index=0)
+            p_contexts[key] = st.selectbox(f":pencil2: {key}", ("ko", "en", "jp"), index=0)
         else:
-            prompt_cntxts[key] = st.text_input(f":pencil2: {key}", key="cntxt_"+key)
+            p_contexts[key] = st.text_input(f":pencil2: {key}", key="cntxt_" + key)
 
     # 파일 이름을 파일 내용으로 업데이트
-    for key, value in prompt_cntxts.items():
+    for key, value in p_contexts.items():
         if '@' in key and value:
             file_path = os.path.join(w_dir, value)
             try:
                 with ut.open_utf_text_file(file_path) as file:
-                    prompt_cntxts[key] = file.read()
+                    p_contexts[key] = file.read()
             except Exception as e:
                 st.error(f"파일 읽기 오류: {e}")
-                prompt_cntxts[key] = None
+                p_contexts[key] = None
 print(f'< fill prompt context')
 
 
 # GENERATE NEWS ---------------------------------------------------------------
 print(f'> generate news button')
-ready_to_generate = all(bool(value) for value in prompt_cntxts.values())
+ready_to_generate = all(bool(value) for value in p_contexts.values())
 print(f"! ready_to_generate: {ready_to_generate}")
 if not ready_to_generate:
     st.warning("🤔 비어 있는 입력 항목이 있습니다!")
@@ -214,7 +214,7 @@ if st.button(
     chain = prompt | model | output_parser
     with st.spinner("생성 중..."):
         start_time = time.time()
-        llm_result = chain.invoke(prompt_cntxts)
+        llm_result = chain.invoke(p_contexts)
         end_time = time.time()
         elapsed_time = end_time - start_time
     print(f'< on_generate_process')

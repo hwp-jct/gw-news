@@ -38,20 +38,28 @@ def run_pure_python_test():
 # ----------------------------------------------
 
 def st_home_info():
-    st.subheader("월드 뉴스 생성 작업 순서")
-    st.write("1. Collect Log : DB에서 로그 수집")
-    st.write("2. Analysis Log : 로그 분석")
-    st.write("3. Generate News : 뉴스 생성")
+    st.subheader("월드 뉴스 생성 작업 진행 과정")
+    st.write("""
+1. 환경 설정
+    - 시즌과 회차 선택
+    - 그 외 추가 설정
+2. Start 버튼 클릭
+    - S3에서 배틀 로그 수집
+    - 로그 분석
+    - 생성
+    """)
+    if st.button("Start", key="start", type="primary", use_container_width=True):
+        st.toast("열심히 구현중 입니다!", icon="🚀")
 
 
 def run_streamlit():
     # show_pages([
     #     Page("app.py", "Home", "🏠"),
-    #     Page("page_per_task/file_management.py", "File Management", "📂"),
+    #     Page("page_per_task/pg_file_upload.py", "File Management", "📂"),
     #     Section(name="Test WWN Generation", icon="🎯"),
-    #     Page("page_per_task/collect_gw_battle_log.py", "Collect Log", ":one:"),
-    #     Page("page_per_task/analyze_gw_battle_log.py", "Analysis Log", ":two:"),
-    #     Page("page_per_task/generate_news.py", "Generate News", ":three:"),
+    #     Page("page_per_task/pg_collect_log.py", "Collect Log", ":one:"),
+    #     Page("page_per_task/pg_analyze_log.py", "Analysis Log", ":two:"),
+    #     Page("page_per_task/pg_gen_wwn.py", "Generate News", ":three:"),
     #     # Page("page_per_task/test_st.py", "Test Streamlit"),
     #     ]),
     pass
@@ -82,14 +90,14 @@ if __name__ == '__main__':
         ut.print_log.st_writer = st.warning
         st.session_state.pages = {
             "Home": [
-                st.Page(st_home_info, title="Home", icon=":material/home:"),
+                st.Page(st_home_info, title="Generation", icon=":material/autoplay:"),
                 # st.Page(ut.check_password, title="BatchRun", icon=":material/passkey:"),
             ],
             "Test": [
-                st.Page("page_per_task/file_management.py", title="Upload", icon=":material/cloud_upload:"),
-                st.Page("page_per_task/collect_gw_battle_log.py", title="Collect Log", icon=":material/counter_1:"),
-                st.Page("page_per_task/analyze_gw_battle_log.py", title="Analysis Log", icon=":material/counter_2:"),
-                st.Page("page_per_task/generate_news.py", title="Generate News", icon=":material/counter_3:"),
+                st.Page("page_per_task/pg_file_upload.py", title="Upload", icon=":material/cloud_upload:"),
+                st.Page("page_per_task/pg_collect_log.py", title="Collect Log", icon=":material/counter_1:"),
+                st.Page("page_per_task/pg_analyze_log.py", title="Analysis Log", icon=":material/counter_2:"),
+                st.Page("page_per_task/pg_gen_wwn.py", title="Test Prompt", icon=":material/counter_3:"),
                 # st.Page("page_per_task/test_st.py", "Test Streamlit"),
             ],
         }

@@ -51,19 +51,6 @@ def load_guild_info():
 
 # ----------------------------------------------
 
-def _load_raw_log(svr_id, reason, log_desc, dic_users, dic_guild):
-    try:
-        df = ut.pd_read_csv(ut.get_work_path(f'collect/{svr_id}/{reason}.csv'), header=None)
-    except FileNotFoundError:
-        df = pd.DataFrame()
-        print(f"File not found: {ut.get_work_path(f'collect/{svr_id}/{reason}.csv')}")
-    except pd.errors.EmptyDataError:
-        df = pd.DataFrame()
-    return df
-
-
-# ----------------------------------------------
-
 def chage_id_to_name(dic_guild, dic_users, reason, group):
     group['UserName'] = group['UserID'].apply(lambda x: dic_users.get(x, {'LordName': x})['LordName'])
     group['UserName'] = group['UserName'].astype(str)
@@ -78,6 +65,19 @@ def chage_id_to_name(dic_guild, dic_users, reason, group):
     reason_csv = ut.get_work_path(f'result/{reason}.csv')
     enc_type = os.getenv("ENC_TYPE", 'utf-8')
     ut.df_write_csv(group, reason_csv, encoding=enc_type)
+
+
+# ----------------------------------------------
+
+def _load_raw_log(svr_id, reason, log_desc, dic_users, dic_guild):
+    try:
+        df = ut.pd_read_csv(ut.get_work_path(f'collect/{svr_id}/{reason}.csv'), header=None)
+    except FileNotFoundError:
+        df = pd.DataFrame()
+        print(f"File not found: {ut.get_work_path(f'collect/{svr_id}/{reason}.csv')}")
+    except pd.errors.EmptyDataError:
+        df = pd.DataFrame()
+    return df
 
 
 # ----------------------------------------------
@@ -164,20 +164,20 @@ def _analyze_ww_30004(df_org, svr_id):
     # 공격/방어 반대 쌍 중복 데이터 제거
     ad_pair = ad_pair[ad_pair['제독1_UID'] < ad_pair['제독2_UID']]
 
-    def reverse_op(row, column_name):
+    def _reverse_op_(row, column_name):
         reverse_condition = (ad_rvrs['제독1_UID'] == row['제독2_UID']) & (ad_rvrs['제독2_UID'] == row['제독1_UID'])
         # filtered_data = ad_rvrs[reverse_condition][column_name]
         filtered_data = ad_rvrs.loc[reverse_condition, column_name]
         return filtered_data.values[0] if len(filtered_data) > 0 else 0
 
-    ad_pair['제독2_공격횟수'] = ad_pair.apply(lambda row: reverse_op(row, '제독1_공격횟수'), axis=1)
-    ad_pair['제독2_승리횟수'] = ad_pair.apply(lambda row: reverse_op(row, '제독1_승리횟수'), axis=1)
+    ad_pair['제독2_공격횟수'] = ad_pair.apply(lambda row: _reverse_op_(row, '제독1_공격횟수'), axis=1)
+    ad_pair['제독2_승리횟수'] = ad_pair.apply(lambda row: _reverse_op_(row, '제독1_승리횟수'), axis=1)
     # ad_pair['제독2_공격횟수'] = ad_pair.apply(lambda row: len(df[(df['제독1_UID'] == row['제독2_UID']) & (df['제독2_UID'] == row['제독1_UID'])]), axis=1)
     # ad_pair['제독2_승리횟수'] = ad_pair.apply(lambda row: len(df[(df['제독1_UID'] == row['제독2_UID']) & (df['제독2_UID'] == row['제독1_UID']) & (df['승리'] == 1)]), axis=1)
 
-    ad_pair['제독2_공격전투력소모'] = ad_pair.apply(lambda row: reverse_op(row, '제독1_공격전투력소모'), axis=1)
-    ad_pair['제독1_방어전투력소모'] = ad_pair.apply(lambda row: reverse_op(row, '제독2_방어전투력소모'), axis=1)
-    ad_pair['제독2_공격총전투력소모'] = ad_pair.apply(lambda row: reverse_op(row, '제독1_공격총전투력소모'), axis=1)
+    ad_pair['제독2_공격전투력소모'] = ad_pair.apply(lambda row: _reverse_op_(row, '제독1_공격전투력소모'), axis=1)
+    ad_pair['제독1_방어전투력소모'] = ad_pair.apply(lambda row: _reverse_op_(row, '제독2_방어전투력소모'), axis=1)
+    ad_pair['제독2_공격총전투력소모'] = ad_pair.apply(lambda row: _reverse_op_(row, '제독1_공격총전투력소모'), axis=1)
     ad_pair['총전투횟수'] = ad_pair['제독1_공격횟수'] + ad_pair['제독2_공격횟수']
     ad_pair['총전투력소모'] = ad_pair['제독1_공격총전투력소모'] + ad_pair['제독2_공격총전투력소모'] + ad_pair['제독1_방어전투력소모'] + ad_pair['제독2_방어전투력소모']
     ad_pair = ad_pair.sort_values(by='총전투횟수', ascending=False)
@@ -188,7 +188,7 @@ def _analyze_ww_30004(df_org, svr_id):
     ad_pair = ad_pair.head(50)
     ad_pair.to_csv(ut.get_work_path(f'collect/{svr_id}/C{svr_id}_30004.csv'), index=False, encoding='utf-8')
     # print(ad_pair.head(5))
-    print('Complete 30004')
+    print(f'Complete {svr_id}/30004')
 
 
 
@@ -225,18 +225,18 @@ def _analyze_ww_30005(df_org, svr_id):
     # 공격/방어 반대 쌍 중복 데이터 제거
     ad_pair = ad_pair[ad_pair['연합1_UID'] < ad_pair['연합2_UID']]
 
-    def reverse_op(row, column_name):
+    def _reverse_op_(row, column_name):
         reverse_condition = (ad_rvrs['연합1_UID'] == row['연합2_UID']) & (ad_rvrs['연합2_UID'] == row['연합1_UID'])
         # filtered_data = ad_rvrs[reverse_condition][column_name]
         filtered_data = ad_rvrs.loc[reverse_condition, column_name]
         return filtered_data.values[0] if len(filtered_data) > 0 else 0
 
-    ad_pair['연합2_공격횟수'] = ad_pair.apply(lambda row: reverse_op(row, '연합1_공격횟수'), axis=1)
-    ad_pair['연합2_승리횟수'] = ad_pair.apply(lambda row: reverse_op(row, '연합1_승리횟수'), axis=1)
+    ad_pair['연합2_공격횟수'] = ad_pair.apply(lambda row: _reverse_op_(row, '연합1_공격횟수'), axis=1)
+    ad_pair['연합2_승리횟수'] = ad_pair.apply(lambda row: _reverse_op_(row, '연합1_승리횟수'), axis=1)
 
-    ad_pair['연합2_집결공격전투력소모'] = ad_pair.apply(lambda row: reverse_op(row, '연합1_집결공격전투력소모'), axis=1)
-    ad_pair['연합1_집결방어전투력소모'] = ad_pair.apply(lambda row: reverse_op(row, '연합2_집결방어전투력소모'), axis=1)
-    ad_pair['연합2_집결총전투력소모'] = ad_pair.apply(lambda row: reverse_op(row, '연합1_집결총전투력소모'), axis=1)
+    ad_pair['연합2_집결공격전투력소모'] = ad_pair.apply(lambda row: _reverse_op_(row, '연합1_집결공격전투력소모'), axis=1)
+    ad_pair['연합1_집결방어전투력소모'] = ad_pair.apply(lambda row: _reverse_op_(row, '연합2_집결방어전투력소모'), axis=1)
+    ad_pair['연합2_집결총전투력소모'] = ad_pair.apply(lambda row: _reverse_op_(row, '연합1_집결총전투력소모'), axis=1)
     ad_pair['총전투횟수'] = ad_pair['연합1_공격횟수'] + ad_pair['연합2_공격횟수']
     ad_pair['총전투력소모'] = ad_pair['연합1_집결총전투력소모'] + ad_pair['연합2_집결총전투력소모'] + ad_pair['연합1_집결방어전투력소모'] + ad_pair['연합2_집결방어전투력소모']
     ad_pair = ad_pair.sort_values(by='총전투횟수', ascending=False)
@@ -244,7 +244,7 @@ def _analyze_ww_30005(df_org, svr_id):
 
     ad_pair.to_csv(ut.get_work_path(f'collect/{svr_id}/C{svr_id}_30005.csv'), index=False, encoding='utf-8')
     # print(ad_pair.head(5))
-    print('Complete 30005')
+    print(f'Complete {svr_id}/30005')
 
 
 # ----------------------------------------------
@@ -262,16 +262,12 @@ def _analyze_ww_30027(df_org, svr_id):
     df_org.drop(columns=drop_list, inplace=True)
     df_org.set_index('LogDate', inplace=True)
     df_org.to_csv(ut.get_work_path(f'collect/{svr_id}/C{svr_id}_30027.csv'), index=True, encoding='utf-8')
-    print('Complete 30027')
-
+    print(f'Complete {svr_id}/30027')
 
 
 # ==============================================
 
-if __name__ == '__main__':
-
-    # srvr_ids = ['1029']
-    srvr_ids = ['2092', '1133']
+def analyze_ww_logs(server_ids):
     mas_df = load_users_mas_info()
     dic_users = pd.Series(mas_df.LordName.values, index=mas_df.UserID).to_dict()
     dic_guild = load_guild_info()
@@ -284,7 +280,7 @@ if __name__ == '__main__':
         30027: _analyze_ww_30027
     }
 
-    for svr_id in srvr_ids:
+    for svr_id in server_ids:
         for reason in ww_reasons:
             df = _load_raw_log(svr_id, reason, log_desc, dic_users, dic_guild)
             df = _organize_header(df, log_desc, reason)
@@ -293,5 +289,9 @@ if __name__ == '__main__':
             df = _filter_ww_participants(df, dic_users, dic_guild, svr_id, reason, uid_cols, gid_cols)
             analyze_ww[reason](df, svr_id)
 
+
+if __name__ == '__main__':
+    server_ids = [1133, 2092]
+    analyze_ww_logs(server_ids)
     print("Complete!")
 

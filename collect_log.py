@@ -15,12 +15,11 @@ from tqdm import tqdm
 from stqdm import stqdm
 
 import utils as ut
-import game_log_analyzer as gla
+import analyze_log as gla
 
 # --------------------------------------
 
 DB_ENGINE = None
-prog_bar = stqdm  # use tqdm console mode. see __main__
 
 
 # ----------------- DB -----------------
@@ -80,14 +79,14 @@ prog_bar = stqdm  # use tqdm console mode. see __main__
 
 # ----------------- AWS S3 -----------------
 
-def _s3_file_download(date: datetime, server_id):
+def _s3_file_download(date: datetime, svr_id):
     bucket_name = 'gw-server-log'
-    sub_path = f'collect/{server_id}'
+    sub_path = f'collect/{svr_id}'
     file_name = f'Game_{date:%Y-%m-%d}.gz'
     # s3_obj_name = f'{date:%Y/%m/%d}/{server_id}/dblog/Game_{date:%Y-%m-%d_%H-%M}.gz'
-    s3_obj_name = f'{date:%Y/%m/%d}/{server_id}/dblog/Game_{date:%Y-%m-%d}_00:00.gz'
+    s3_obj_name = f'{date:%Y/%m/%d}/{svr_id}/dblog/Game_{date:%Y-%m-%d}_00:00.gz'
     if ut.f_exists(file_name, sub_path):
-        print(f'{server_id}/{file_name} already exists.')
+        print(f'{svr_id}/{file_name} already exists.')
         return
     try:
         s3r = boto3.resource('s3')
@@ -102,22 +101,22 @@ def _s3_file_download(date: datetime, server_id):
                     s3_client.download_fileobj(bucket_name, s3_obj_name, z_file)
         else:
             # print(f"Downloading with tqdm!")
-            with prog_bar(
+            with tqdm(
                     total=file_size,
                     desc=f's3://{bucket_name}/{s3_obj_name}',
                     unit='B',
                     unit_scale=True) as pbar:
                 with ut.fs_open(file_name, sub_path, 'wb') as z_file:
                     s3_client.download_fileobj(bucket_name, s3_obj_name, z_file, Callback=pbar.update)
-        print(f'{server_id}/{file_name} complete!')
+        print(f'{svr_id}/{file_name} complete!')
     except Exception as e_s3:
         print(f"Error occurred: {e_s3}")
 
 
-def _s3_decompress_log(file_name: str, server_id):
-    sub_path = f'collect/{server_id}'
+def _s3_decompress_log(file_name: str, svr_id):
+    sub_path = f'collect/{svr_id}'
     if ut.f_exists(file_name, sub_path):
-        print(f'{server_id}/{file_name} already exists.')
+        print(f'{svr_id}/{file_name} already exists.')
         return
     with ut.z_open(f'{file_name}.gz', sub_path, 'rb') as z_file:
         # progress_bar 진행율을 z_file의 크기로 설정
@@ -127,20 +126,23 @@ def _s3_decompress_log(file_name: str, server_id):
         chunks = int(z_file_size / buffer_size + 1)
         z_file.seek(0)
         with ut.fs_open(file_name, sub_path, 'wb') as uz_file:
-            pbar = prog_bar(iter(lambda: z_file.read(buffer_size), b""), desc=f'un_zip: {file_name}.gz', total=chunks)
+            if os.getenv("USE_STREAMLIT", "True") == "True":
+                pbar = stqdm(iter(lambda: z_file.read(buffer_size), b""), desc=f'un_zip: {file_name}.gz', total=chunks)
+            else:
+                pbar = tqdm(iter(lambda: z_file.read(buffer_size), b""), desc=f'un_zip: {file_name}.gz', total=chunks)
             for chunk in pbar:
                 uz_file.write(chunk)
-        print(f'{server_id}/{file_name} complete!')
+        print(f'{svr_id}/{file_name} complete!')
 
 
-def _s3_extract_log_by_reason(file_name: str, server_id, beg_time, end_time, mode):
+def _s3_extract_log_by_reason(file_name: str, svr_id, beg_time, end_time, mode):
     keys = gla.get_battle_log_headers(False)
     key_idx = keys.index('LogDate')
     keys[key_idx] = 'Time'
     # print(f'keys: {keys}')
     # beg_time = start_date.replace(hour=10, minute=0, second=0, microsecond=0)
     # end_time = beg_time + timedelta(days=1)
-    sub_path = f'collect/{server_id}'
+    sub_path = f'collect/{svr_id}'
     with ut.fs_open(file_name, sub_path, 'r') as f:
         try:
             with (ut.fs_open(f'30004.csv', sub_path, mode) as wf30004,
@@ -153,7 +155,10 @@ def _s3_extract_log_by_reason(file_name: str, server_id, beg_time, end_time, mod
                 print(f"total lines: {cnt_line}")
                 f.seek(0)
                 # ignore_keys = {'Level', 'LogType', 'LogDate_Svr', 'Command', 'SN', 'MSG'}
-                pbar = prog_bar(f, desc=f'xtract: {file_name}', total=cnt_line)
+                if os.getenv("USE_STREAMLIT", "True") == "True":
+                    pbar = stqdm(f, desc=f'xtract: {svr_id}/{file_name}', total=cnt_line)
+                else:
+                    pbar = tqdm(f, desc=f'xtract: {svr_id}/{file_name}', total=cnt_line)
                 writerow = {30004: csv30004.writerow, 30005: csv30005.writerow, 30027: csv30027.writerow}
                 dbg_write_once = {30004:True, 30005:True, 30027:True }
                 for line in pbar:
@@ -177,39 +182,58 @@ def _s3_extract_log_by_reason(file_name: str, server_id, beg_time, end_time, mod
                         # print(f"write header: {reason}\n{ordered_data}")
                         dbg_write_once[reason] = False
                     writerow[reason](ordered_data)
-            print(f'{server_id}/{file_name} extract 30004, 30005, 30027 csv file "{mode}" mode complete!')
+            print(f'{svr_id}/{file_name} extract 30004, 30005, 30027 csv file "{mode}" mode complete!')
         except Exception as e_extract:
             print(f"Error occurred: {e_extract}")
 
 
 def s3_fetch_game_log_process(srv_ids, beg_time, end_time):
-    print('Fetch From S3...')
-    for srv_id in srv_ids:
-        for date in pd.date_range(beg_time.date(), end_time.date()):
-            _s3_file_download(date.date(), srv_id)
-    print('Unzip Downloaded GZ...')
-    for srv_id in srv_ids:
-        for date in pd.date_range(beg_time.date(), end_time.date()):
-            file_name = f'Game_{date:%Y-%m-%d}'
-            _s3_decompress_log(file_name, srv_id)
-    print(f'Extracting World War Stats {beg_time} to {end_time}...')
-    for srv_id in srv_ids:
-        for date in pd.date_range(beg_time.date(), end_time.date()):
-            is_start_date = date.date() == beg_time.date()
-            file_name = f'Game_{date:%Y-%m-%d}'
-            _s3_extract_log_by_reason(file_name, srv_id, beg_time, end_time, 'w' if is_start_date else 'a')
+    if os.getenv("USE_STREAMLIT", "True") == "True":
+        with st.status("로그 수집중...", expanded=True) as status:
+            st.write('Fetch From S3...')
+            for srv_id in srv_ids:
+                for date in pd.date_range(beg_time.date(), end_time.date()):
+                    _s3_file_download(date.date(), srv_id)
+                    # time.sleep(1)
+            st.write('Unzip Downloaded GZ...')
+            for srv_id in srv_ids:
+                for date in pd.date_range(beg_time.date(), end_time.date()):
+                    file_name = f'Game_{date:%Y-%m-%d}'
+                    _s3_decompress_log(file_name, srv_id)
+                    # time.sleep(1)
+            st.write(f'Extracting World War logs...')
+            for srv_id in srv_ids:
+                for date in pd.date_range(beg_time.date(), end_time.date()):
+                    is_start_date = date.date() == beg_time.date()
+                    file_name = f'Game_{date:%Y-%m-%d}'
+                    _s3_extract_log_by_reason(file_name, srv_id, beg_time, end_time, 'w' if is_start_date else 'a')
+                    # time.sleep(1)
+            status.update(label="로그 수집 완료!", state="complete", expanded=False)
+    else:
+        print('Fetch From S3...')
+        for srv_id in srv_ids:
+            for date in pd.date_range(beg_time.date(), end_time.date()):
+                _s3_file_download(date.date(), srv_id)
+        print('Unzip Downloaded GZ...')
+        for srv_id in srv_ids:
+            for date in pd.date_range(beg_time.date(), end_time.date()):
+                file_name = f'Game_{date:%Y-%m-%d}'
+                _s3_decompress_log(file_name, srv_id)
+        print(f'Extracting World War logs...')
+        for srv_id in srv_ids:
+            for date in pd.date_range(beg_time.date(), end_time.date()):
+                is_start_date = date.date() == beg_time.date()
+                file_name = f'Game_{date:%Y-%m-%d}'
+                _s3_extract_log_by_reason(file_name, srv_id, beg_time, end_time, 'w' if is_start_date else 'a')
 
 
 if __name__ == '__main__':
     os.environ["USE_STREAMLIT"] = "False"
-    prog_bar = tqdm
     # 설정 파일 읽기
     # config = configparser.ConfigParser()
     # config.read(ut.get_work_path('main-bl.ini'))
 
     server_ids = ['1133', '2092']
-    # server_ids = ['1029']
-    # server_ids = ['2092']
     # ut.clear_work_folder('collect')
 
     with ut.dont_disturb():
