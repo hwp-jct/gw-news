@@ -25,7 +25,7 @@ def get_battle_log_headers(is_full_log:bool, readerble_p = None):
 # ----------------------------------------------
 
 def load_battle_log_desc():
-    df_battle_desc = pd.read_excel(ut.get_work_path("GW_게임로그정의서.xlsx"), sheet_name='Battle', skiprows=4, usecols="C:AI")
+    df_battle_desc = pd.read_excel(ut.get_work_path("collect/GW_게임로그정의서.xlsx"), sheet_name='Battle', skiprows=4, usecols="C:AI")
     df_battle_desc.set_index("Reason", inplace=True)
     return df_battle_desc
 
@@ -33,7 +33,7 @@ def load_battle_log_desc():
 # ----------------------------------------------
 
 def load_users_mas_info():
-    df = ut.pd_read_csv(ut.get_work_path("mom.csv"))
+    df = ut.pd_read_csv(ut.get_work_path("collect/mom.csv"))
     drop_list = ['Guild_WL_TYpe', 'LastKWGuild', 'Carrier_Move_Type']
     df.drop(columns=drop_list, inplace=True)
     df['LordName'] = df['LordName'].apply(ut.fix4_xl_str)
