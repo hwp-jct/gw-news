@@ -13,7 +13,7 @@ if not ut.st_check_password():
 
 st_ss = st.session_state
 
-st.subheader("DB로 부터 배틀 로그 수집")
+st.subheader("로그 수집")
 st.markdown("""
 1. DB로 부터 세계 대전 정보 수집
     - 참여 서버 정보 목록
@@ -26,6 +26,8 @@ st.markdown("""
     - 로그 파일 압축 해제
     - Reason 30004, 30005, 30027 로그 추출
 """)
+
+st.divider()
 
 # yesterday = today - pd.Timedelta(days=1)
 # today = pd.Timestamp.today()
@@ -45,7 +47,7 @@ st.info('테스트를 위해 특정 서버(1133, 2092)의 로그만 수집합니
 if st_ss.get("btn_collect", False):
     server_ids = [1133, 2092]
     collector.s3_fetch_game_log_process(server_ids, yesterday, today)
-st.button("로그 수집 시작", key="btn_collect", disabled=ut.DONT_DISTURB)
+st.button("로그 수집 시작", key="btn_collect")
 
 # def st_on_btn_collect():
 #     server_ids = [1133, 2092]

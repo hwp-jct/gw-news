@@ -29,7 +29,7 @@ def get_llm(model_name, section, temperature=0.7, top_p=0.95):
             temperature=temperature,
             model_kwargs={"top_p": top_p},
         )
-    else:
+    elif section == "OPENAI":
         from langchain_openai import ChatOpenAI
         llm = ChatOpenAI(
             openai_api_key=ut.st_secrets("API_KEY", section),
@@ -37,6 +37,8 @@ def get_llm(model_name, section, temperature=0.7, top_p=0.95):
             temperature=temperature,
             model_kwargs={"top_p": top_p},
         )
+    else:
+        raise ValueError(f"Invalid LLM section: {section}")
     return llm
 
 

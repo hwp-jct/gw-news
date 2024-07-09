@@ -16,16 +16,9 @@ import llms as llm
 
 st_ss = st.session_state
 
-print("REFRESHED")
 if not ut.st_check_password():
     # st.switch_page(st.seesion_state.pages["Home"][0])
     st.stop()
-
-if "prompt_template" not in st_ss:
-    st_ss.prompt_template = None
-
-if "prompt_file" not in st_ss:
-    st_ss.prompt_file = None
 
 if "dbg_run_cnt" not in st_ss:
     st_ss.dbg_run_cnt = 0
@@ -33,82 +26,25 @@ if "dbg_run_cnt" not in st_ss:
 st_ss.dbg_run_cnt += 1
 print(f"dbg_run_cnt----->: {st_ss.dbg_run_cnt}")
 
-p_contexts = {}
 
-
-# SIDEBAR LLM -----------------------------------------------------------------
+# INTERNAL FUNCTIONS ----------------------------------------------------------
 
 @st.cache_data
 def get_llm_models(llm_type):
-    return [model["NAME"] for model in ut.st_secrets("MODELS", llm_type)]
+    return [md["NAME"] for md in ut.st_secrets("MODELS", llm_type)]
 
 
-with st.sidebar:
-    st.caption("Select llm type(Azure or OpenAI)")
-    st.selectbox("llm type", ("OPENAI", "AZURE"), index=0, key="llm_type")
-    model_names = get_llm_models(st_ss.llm_type)
+@st.experimental_fragment()
+def st_wwn_sidebar():
+    # st.caption("Select llm type(Azure or OpenAI)")
+    # st.selectbox("llm type", ("OPENAI", "AZURE"), index=0, key="llm_type")
+    # model_names = get_llm_models(st_ss.llm_type)
+    model_names = get_llm_models("OPENAI")
     st.selectbox("select model", model_names, index=0, key="llm_model")
     st.slider("temperature", 0.0, 1.0, 0.7, 0.01, key="llm_temper")
     st.slider("top_p", 0.0, 1.0, 0.95, 0.01, key="llm_top_p")
 
 
-# PROMPT FILE -----------------------------------------------------------------
-
-# LOAD PROMPT FILE ------------------------------------------------------------
-
-def _refresh_prompt_file_opt():
-    w_dir = ut.get_work_path("prompts")
-    st_ss.prompt_file_opt = [f for f in os.listdir(w_dir) if os.path.isfile(os.path.join(w_dir, f)) and f.endswith(".txt")]
-
-if 'prompt_file_opt' not in st_ss:
-    st_ss.prompt_file_opt = []
-    _refresh_prompt_file_opt()
-
-# _refresh_prompt_file_opt()
-
-def on_change_prompt_file_select():
-    filename = st_ss.prompt_file
-    print(f"! change prompt_file: {filename}")
-    _refresh_prompt_file_opt()
-    if not os.path.exists(os.path.join(ut.get_work_path("prompts"), filename)):
-        st_ss.prompt_file = None
-        st.toast("파일이 존재하지 않습니다.", icon="🤔")
-        return
-    if filename in st_ss.prompt_file_opt:
-        st_ss.prompt_file_opt.remove(filename)
-        st_ss.prompt_file_opt.insert(0, filename)
-    if filename is not None:
-        filepath = os.path.join(ut.get_work_path("prompts"), filename)
-        print(f"! load prompt file: {filepath}")
-        st_ss.prompt_template = ut.open_utf_text_file(filepath).read()
-
-
-print(f"> select prompt file {st_ss.prompt_file}")
-# print(f"! prompt_file_opt: {st_ss.prompt_file_opt}")
-st.selectbox(
-    "load prompt file",
-    st_ss.prompt_file_opt,
-    placeholder="select a prompt file...",
-    key='prompt_file',
-    label_visibility="collapsed",
-    on_change=on_change_prompt_file_select,
-)
-print(f"< select prompt file {st_ss.prompt_file}")
-
-# EDIT PROMPT TEXT ------------------------------------------------------------
-
-prompt_text = st.text_area(
-    ":pencil2: 프롬프트 템플릿",
-    value=st_ss.prompt_template,
-    height=280,
-    placeholder="프롬프트 템플릿을 입력하거나 파일에서 로딩하세요.")
-prompt_modified = st_ss.prompt_template != prompt_text
-print(f"- prompt text is modified? {prompt_modified}")
-# print(f"- prompt text is modified? {prompt_modified}:\n{st_ss.prompt_template}\n=>\n{prompt_text}")
-st_ss.prompt_template = prompt_text
-
-
-# SAVE PROMPT FILE ------------------------------------------------------------
 @st.experimental_dialog("저장할 파일 이름을 입력하세요.")
 def st_dialog_save_as_prompt():
     contents = st_ss.prompt_template
@@ -138,6 +74,150 @@ def st_dialog_save_as_prompt():
     # return False
 
 
+def _refresh_prompt_file_opt():
+    w_dir = ut.get_work_path("prompts")
+    st_ss.prompt_file_opt = [f for f in os.listdir(w_dir) if os.path.isfile(os.path.join(w_dir, f)) and f.endswith(".txt")]
+
+
+def on_change_prompt_file_select():
+    filename = st_ss.prompt_file
+    print(f"! change prompt_file: {filename}")
+    _refresh_prompt_file_opt()
+    if not os.path.exists(os.path.join(ut.get_work_path("prompts"), filename)):
+        st_ss.prompt_file_ = st_ss.prompt_file = None
+        st.toast("파일이 존재하지 않습니다.", icon="🤔")
+        return
+
+    if filename in st_ss.prompt_file_opt:
+        st_ss.prompt_file_opt.remove(filename)
+        st_ss.prompt_file_opt.insert(0, filename)
+    if filename is not None:
+        filepath = os.path.join(ut.get_work_path("prompts"), filename)
+        print(f"! load prompt file: {filepath}")
+        st_ss.prompt_template = ut.open_utf_text_file(filepath).read()
+    st_ss.prompt_file_ = st_ss.prompt_file  # session state에 저장
+
+
+def _get_prompt_contents(fill_contents):
+    if not st_ss.prompt_template:
+        return {}, False
+    contexts = re.findall(r'{(.*?)}', st_ss.prompt_template)
+    contexts = list(set(contexts))  # 중복 제거
+    p_params = {key: None for key in contexts}
+
+    w_dir = ut.get_work_path("testlog")
+    file_list = [f for f in os.listdir(w_dir) if os.path.isfile(os.path.join(w_dir, f))]
+
+    for key, value in p_params.items():
+        if '@' in key:
+            p_params[key] = st_ss.get(f"c_{key}", None)
+            if not p_params[key]:
+                idx = None
+                key_file = key.replace('@', '.')
+                if key_file in file_list:
+                    p_params[key] = key
+        elif key == "language":
+            p_params[key] = st_ss.get("c_lang_sel", "ko")
+        else:
+            p_params[key] = st_ss.get("c_" + key, None)
+
+    if fill_contents:
+        # contexts 마다 프로젝트의 data/testlog 폴더에 있는 파일을 선택할 수 있는 컴포넌트를 생성
+        for key, value in p_params.items():
+            # 파일 이름을 파일 내용으로 업데이트
+            if '@' in key and value:
+                key_file = key.replace('@', '.')
+                file_path = os.path.join(w_dir, key_file)
+                try:
+                    with ut.open_utf_text_file(file_path) as file:
+                        p_params[key] = file.read()
+                except Exception as e:
+                    st.error(f"파일 읽기 오류: {e}")
+                    p_params[key] = None
+
+    all_filled: bool = False
+    if st_ss.prompt_template:
+        if p_params:
+            all_filled = all(bool(value) for value in p_params.values())
+        else:
+            all_filled = True
+    return p_params, all_filled
+
+
+@st.experimental_fragment()
+def st_prompt_context(p_params):
+    contexts = re.findall(r'{(.*?)}', st_ss.prompt_template)
+    contexts = list(set(contexts))  # 중복 제거
+    # contexts 마다 프로젝트의 data/testlog 폴더에 있는 파일을 선택할 수 있는 컴포넌트를 생성
+    w_dir = ut.get_work_path("testlog")
+    file_list = [f for f in os.listdir(w_dir) if os.path.isfile(os.path.join(w_dir, f))]
+
+    for key, value in p_params.items():
+        if '@' in key:
+            p_params[key] = st_ss.get(f"c_{key}", None)
+            if p_contexts[key]:
+                st.selectbox(f":pencil2: {key}", file_list, key=f"c_{key}", placeholder="파일 이름을 선택하세요.")
+            else:
+                idx = None
+                key_file = key.replace('@', '.')
+                if key_file in file_list:
+                    p_contexts[key] = key
+                    idx = file_list.index(key_file)
+                st.selectbox(f":pencil2: {key}", file_list, index=idx, key=f"c_{key}", placeholder="파일 이름을 선택하세요.")
+        elif key == "language":
+            st.selectbox(f":pencil2: {key}", ("ko", "en", "jp"), index=0, key="c_lang_sel")
+        else:
+            st.text_input(f":pencil2: {key}", key="c_" + key)
+
+
+# MAIN =========================================================================
+
+st_ss.llm_type = "OPENAI"
+
+if "prompt_template" not in st_ss:
+    st_ss.prompt_template = None
+
+if "prompt_file_" not in st_ss:
+    st_ss.prompt_file_ = None
+
+if "prompt_file" not in st_ss:
+    st_ss.prompt_file = st_ss.prompt_file_
+
+with st.sidebar:
+    st_wwn_sidebar()
+
+if 'prompt_file_opt' not in st_ss:
+    st_ss.prompt_file_opt = []
+    _refresh_prompt_file_opt()
+
+# PROMPRT FILE ----------------------------------------------------------------
+
+print(f"> select prompt file {st_ss.prompt_file}")
+# print(f"! prompt_file_opt: {st_ss.prompt_file_opt}")
+st.selectbox(
+    "load prompt file",
+    st_ss.prompt_file_opt,
+    placeholder="select a prompt file...",
+    key='prompt_file',
+    label_visibility="collapsed",
+    on_change=on_change_prompt_file_select,
+)
+print(f"< select prompt file {st_ss.prompt_file}")
+
+# PROMPRT TEXT ----------------------------------------------------------------
+
+prompt_text = st.text_area(
+    ":pencil2: 프롬프트 템플릿",
+    value=st_ss.prompt_template,
+    height=280,
+    placeholder="프롬프트 템플릿을 입력하거나 파일에서 로딩하세요.")
+prompt_modified = st_ss.prompt_template != prompt_text
+print(f"- prompt text is modified? {prompt_modified}")
+# print(f"- prompt text is modified? {prompt_modified}:\n{st_ss.prompt_template}\n=>\n{prompt_text}")
+st_ss.prompt_template = prompt_text
+
+# SAVE PROMPT TEXT -----------------------------------------------------------
+
 print(f'> save dialog buttons')
 col1, col2 = st.columns([1, 1])
 with col1:
@@ -152,59 +232,24 @@ with col2:
         st_dialog_save_as_prompt()
 print(f'< save dialog buttons')
 
-# PROMPT CONTEXT -------------------------------------------------------------
+# PROMPRT TEMPLATE PARAMS -----------------------------------------------------
+
 print(f'> fill prompt context')
 if st_ss.prompt_template:
-    contexts = re.findall(r'{(.*?)}', st_ss.prompt_template)
-    contexts = list(set(contexts))  # 중복 제거
-    # contexts 마다 프로젝트의 data/testlog 폴더에 있는 파일을 선택할 수 있는 컴포넌트를 생성
-    w_dir = ut.get_work_path("testlog")
-    file_list = [f for f in os.listdir(w_dir) if os.path.isfile(os.path.join(w_dir, f))]
-    p_contexts = {key: None for key in contexts}
-
-    for key, value in p_contexts.items():
-        if '@' in key:
-            idx = None
-            key_file = key.replace('@', '.')
-            if key_file in file_list:
-                p_contexts[key] = key
-                idx = file_list.index(key_file)
-            p_contexts[key] = st.selectbox(f":pencil2: {key}", file_list, index=idx, placeholder="파일 이름을 선택하세요.")
-        elif key == "language":
-            p_contexts[key] = st.selectbox(f":pencil2: {key}", ("ko", "en", "jp"), index=0)
-        else:
-            p_contexts[key] = st.text_input(f":pencil2: {key}", key="cntxt_" + key)
-
-    # 파일 이름을 파일 내용으로 업데이트
-    for key, value in p_contexts.items():
-        if '@' in key and value:
-            file_path = os.path.join(w_dir, value)
-            try:
-                with ut.open_utf_text_file(file_path) as file:
-                    p_contexts[key] = file.read()
-            except Exception as e:
-                st.error(f"파일 읽기 오류: {e}")
-                p_contexts[key] = None
+    p_contexts, ready_to_gen = _get_prompt_contents(False)
+    cnt_context = sum(1 for value in p_contexts.values() if value)
+    with st.expander(f"Prompt Template Parameters: Total {cnt_context}/{len(p_contexts)}", expanded=not ready_to_gen):
+        st_prompt_context(p_contexts)
 print(f'< fill prompt context')
 
-
 # GENERATE NEWS ---------------------------------------------------------------
+
 print(f'> generate news button')
-ready_to_generate = all(bool(value) for value in p_contexts.values())
-print(f"! ready_to_generate: {ready_to_generate}")
-if not ready_to_generate:
-    st.warning("🤔 비어 있는 입력 항목이 있습니다!")
-# else:
-#     print(prompt_cntxts)
+p_contents, ready_to_gen = _get_prompt_contents(True)
+if not ready_to_gen:
+    st.warning("🤔 프롬프트와 템플릿 파라메터들을 채워주세요!")
 
-print(f'st_ss: {st_ss.llm_type}, {st_ss.llm_model}, {st_ss.llm_temper}, {st_ss.llm_top_p}')
-
-if st.button(
-        "프롬프트 실행",
-        key="exec_prompt",
-        type="primary",
-        disabled=not ready_to_generate or st_ss.get('exec_prompt', False),  # or ut.DONT_DISTRUB,
-        use_container_width=True):
+if st_ss.get('exec_prompt', False):
     print(f'> on_generate_process')
     model = llm.get_llm(st_ss.llm_model, st_ss.llm_type, temperature=st_ss.llm_temper, top_p=st_ss.llm_top_p)
 
@@ -214,19 +259,25 @@ if st.button(
     chain = prompt | model | output_parser
     with st.spinner("생성 중..."):
         start_time = time.time()
-        llm_result = chain.invoke(p_contexts)
+        llm_result = chain.invoke(p_contents)
         end_time = time.time()
         elapsed_time = end_time - start_time
     print(f'< on_generate_process')
     st_ss.result = llm_result, elapsed_time
-    st.rerun()  # button activation
+
+st.button("프롬프트 실행", key="exec_prompt", type="primary", disabled=not ready_to_gen, use_container_width=True)
 
 # DISPLAY NEWS ----------------------------------------------------------------
 
-if "result" in st_ss:
+if st_ss.get('clear_result', False):
+    del st_ss.result
+
+if "result" in st_ss and st_ss.result is not None:
     st.divider()
-    st.info(f"generation time : {st_ss.result[1]:.1f} seconds")
+    info, cls = st.columns([1, 1], vertical_alignment="bottom")
     st.write(st_ss.result[0])
+    info.write(f"duration : {st_ss.result[1]:.1f} seconds")
+    cls.button("Clear", key="clear_result", use_container_width=True)
 print(f'< generate news button')
 
 

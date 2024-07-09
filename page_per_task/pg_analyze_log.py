@@ -19,12 +19,14 @@ if not ut.st_check_password():
 
 st.subheader("WW 로그 분석")
 
+st.divider()
+
 if st_ss.get("btn_analyze", False):
     server_ids = [1133, 2092]
     with st.spinner("로그 분석 중..."):
         analyzer.analyze_ww_logs(server_ids)
     st.info("로그 분석 완료")
-st.button("로그 분석 시작", key="btn_analyze", disabled=ut.DONT_DISTURB)
+st.button("로그 분석 시작", key="btn_analyze")
 
 # Old version
 # with st.sidebar:
