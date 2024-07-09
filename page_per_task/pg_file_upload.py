@@ -72,8 +72,8 @@ event = st_file_browser(
         show_preview=False,
         show_choose_file=False,
         show_delete_file=True,
-        show_upload_file=True,
-        show_download_file=False,
+        show_upload_file=False,
+        show_download_file=True,
         show_new_folder=False,
         use_cache=False,
     )

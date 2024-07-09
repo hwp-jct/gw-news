@@ -191,10 +191,13 @@ if 'prompt_file_opt' not in st_ss:
     _refresh_prompt_file_opt()
 
 # PROMPRT FILE ----------------------------------------------------------------
-
 print(f"> select prompt file {st_ss.prompt_file}")
+if st_ss.get('refresh_prompt_file', False):
+    _refresh_prompt_file_opt()
+
+col_filelist, col_refresh = st.columns([1, 1])
 # print(f"! prompt_file_opt: {st_ss.prompt_file_opt}")
-st.selectbox(
+col_filelist.selectbox(
     "load prompt file",
     st_ss.prompt_file_opt,
     placeholder="select a prompt file...",
@@ -202,6 +205,7 @@ st.selectbox(
     label_visibility="collapsed",
     on_change=on_change_prompt_file_select,
 )
+col_refresh.button("파일 목록 최신화", key="refresh_prompt_file", use_container_width=True)
 print(f"< select prompt file {st_ss.prompt_file}")
 
 # PROMPRT TEXT ----------------------------------------------------------------
