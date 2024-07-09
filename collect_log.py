@@ -85,32 +85,35 @@ def _s3_file_download(date: datetime, svr_id):
     file_name = f'Game_{date:%Y-%m-%d}.gz'
     # s3_obj_name = f'{date:%Y/%m/%d}/{server_id}/dblog/Game_{date:%Y-%m-%d_%H-%M}.gz'
     s3_obj_name = f'{date:%Y/%m/%d}/{svr_id}/dblog/Game_{date:%Y-%m-%d}_00:00.gz'
+    print(f'Downloading s3://{bucket_name}/{s3_obj_name}')
+
     if ut.f_exists(file_name, sub_path):
         print(f'{svr_id}/{file_name} already exists.')
         return
-    try:
-        s3r = boto3.resource('s3')
-        s3fo = s3r.Object(bucket_name, s3_obj_name)
-        file_size = s3fo.content_length
-        s3_client = boto3.client('s3')
-        # print(f'USE_STREAMLIT: {os.getenv("USE_STREAMLIT", "True")}')
-        if os.getenv("USE_STREAMLIT", "True") == "True":
-            # print(f"Downloading with stqdm!")
-            with st.spinner(f'Downloading {s3_obj_name}'):
-                with ut.fs_open(file_name, sub_path, 'wb') as z_file:
-                    s3_client.download_fileobj(bucket_name, s3_obj_name, z_file)
-        else:
-            # print(f"Downloading with tqdm!")
-            with tqdm(
-                    total=file_size,
-                    desc=f's3://{bucket_name}/{s3_obj_name}',
-                    unit='B',
-                    unit_scale=True) as pbar:
-                with ut.fs_open(file_name, sub_path, 'wb') as z_file:
-                    s3_client.download_fileobj(bucket_name, s3_obj_name, z_file, Callback=pbar.update)
-        print(f'{svr_id}/{file_name} complete!')
-    except Exception as e_s3:
-        print(f"Error occurred: {e_s3}")
+    w_dir = ut.get_work_path(sub_path)
+    if not os.path.exists(w_dir):
+        os.makedirs(w_dir)
+
+    s3r = boto3.resource('s3')
+    s3fo = s3r.Object(bucket_name, s3_obj_name)
+    file_size = s3fo.content_length
+    s3_client = boto3.client('s3')
+    # print(f'USE_STREAMLIT: {os.getenv("USE_STREAMLIT", "True")}')
+    if os.getenv("USE_STREAMLIT", "True") == "True":
+        # print(f"Downloading with stqdm!")
+        with st.spinner(f'Downloading {s3_obj_name}'):
+            with ut.fs_open(file_name, sub_path, 'wb') as z_file:
+                s3_client.download_fileobj(bucket_name, s3_obj_name, z_file)
+    else:
+        # print(f"Downloading with tqdm!")
+        with tqdm(
+                total=file_size,
+                desc=f's3://{bucket_name}/{s3_obj_name}',
+                unit='B',
+                unit_scale=True) as pbar:
+            with ut.fs_open(file_name, sub_path, 'wb') as z_file:
+                s3_client.download_fileobj(bucket_name, s3_obj_name, z_file, Callback=pbar.update)
+    print(f'{svr_id}/{file_name} complete!')
 
 
 def _s3_decompress_log(file_name: str, svr_id):
