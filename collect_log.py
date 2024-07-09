@@ -83,8 +83,7 @@ def _s3_file_download(date: datetime, svr_id):
     bucket_name = 'gw-server-log'
     sub_path = f'collect/{svr_id}'
     file_name = f'Game_{date:%Y-%m-%d}.gz'
-    # s3_obj_name = f'{date:%Y/%m/%d}/{server_id}/dblog/Game_{date:%Y-%m-%d_%H-%M}.gz'
-    s3_obj_name = f'{date:%Y/%m/%d}/{svr_id}/dblog/Game_{date:%Y-%m-%d}_00:00.gz'
+    s3_obj_name = f'{date:%Y/%m/%d}/{svr_id}/dblog/Game_{date:%Y-%m-%d}_00-00.gz'
     # print(f'Downloading s3://{bucket_name}/{s3_obj_name}')
 
     if ut.f_exists(file_name, sub_path):
@@ -98,7 +97,7 @@ def _s3_file_download(date: datetime, svr_id):
         's3',
         aws_access_key_id=ut.st_secrets('AWS_ACCESS_KEY_ID', 'gwS3'),
         aws_secret_access_key=ut.st_secrets('AWS_SECRET_ACCESS_KEY', 'gwS3'),
-        region=ut.st_secrets('REGION', 'gwS3')
+        region_name=ut.st_secrets('REGION', 'gwS3')
     )
     s3fo = s3r.Object(bucket_name, s3_obj_name)
     file_size = s3fo.content_length
@@ -106,7 +105,7 @@ def _s3_file_download(date: datetime, svr_id):
         's3',
         aws_access_key_id=ut.st_secrets('AWS_ACCESS_KEY_ID', 'gwS3'),
         aws_secret_access_key=ut.st_secrets('AWS_SECRET_ACCESS_KEY', 'gwS3'),
-        region=ut.st_secrets('REGION', 'gwS3')
+        region_name=ut.st_secrets('REGION', 'gwS3')
     )
     # print(f'USE_STREAMLIT: {os.getenv("USE_STREAMLIT", "True")}')
     if os.getenv("USE_STREAMLIT", "True") == "True":
